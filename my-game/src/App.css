@@ -40,3 +40,25 @@
 .read-the-docs {
   color: #888;
 }
+
+.app-root {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+}
+
+.app-title {
+  font-family: Arial, sans-serif;
+  font-size: 36px;
+  margin: 0;
+}
+
+#game-container {
+  width: var(--world-width);
+  height: var(--world-height);
+  border: 2px solid #000;
+  border-radius: 15px;
+  overflow: hidden;
+}
