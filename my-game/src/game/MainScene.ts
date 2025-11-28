@@ -10,18 +10,29 @@ import {
 
 // Staircase example to allow climbing
 const LEVEL_OBSTACLES = [
-    { x: 50, y: 0, width: 950, height: 50 }, // Top wall (base)
-    { x: 950, y: 50, width: 50, height: 950 }, // Right wall (base)
-    { x: 0, y: 950, width: 950, height: 50 }, // Bottom wall (base)
-    { x: 0, y: 0, width: 50, height: 950 }, // Left wall (base)
+    { x: 40, y: 0, width: 1960, height: 40 }, // Top wall (level 0)
+    { x: 1960, y: 40, width: 40, height: 1960 }, // Right wall (level 0)
+    { x: 0, y: 1960, width: 1960, height: 40 }, // Bottom wall (level 0)
+    { x: 0, y: 0, width: 40, height: 1960 }, // Left wall (level 0)
+
+    // Level 0 platforms
+    { x: 40, y: 1720, width: 140, height: 20 },
+    { x: 160, y: 1740, width: 20, height: 80 },
+    { x: 110, y: 1820, width: 70, height: 20 },
+    { x: 300, y: 1840, width: 20, height: 140 },
+
+    // { x: 300, y: 1800, width: 25, height: 150 }, // Bottom wall
+    // { x: 200, y: 1825, width: 100, height: 25 }, // Bottom wall
+    // { x: 400, y: 700, width: 200, height: 50 },
+    // { x: 650, y: 600, width: 200, height: 50 },
+    // { x: 900, y: 500, width: 200, height: 50 },
 
 
-    { x: 250, y: 200, width: 550, height: 50 }, // Top wall (level 1)
-    { x: 750, y: 250, width: 50, height: 550 }, // Right wall (level 1)
-    { x: 200, y: 750, width: 550, height: 50 }, // Bottom wall (level 1)
-    { x: 200, y: 200, width: 50, height: 550 }, // Left wall (level 1)
+    { x: 350, y: 300, width: 1300, height: 50 }, // Top wall (level 1)
+    { x: 1650, y: 300, width: 50, height: 1400 }, // Right wall (level 1)
+    { x: 300, y: 1650, width: 1350, height: 50 }, // Bottom wall (level 1)
+    { x: 300, y: 300, width: 50, height: 1350 }, // Left wall (level 1)
 
-    { x: 300, y: 600, width: 200, height: 30 }, // 
 ];
 
 // const LEVEL_1_WALLS = [
@@ -32,6 +43,8 @@ export default class GameScene extends Phaser.Scene {
     private player!: Phaser.Physics.Arcade.Sprite;
     private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
     private platforms: Phaser.Physics.Arcade.StaticBody[] = []; // store platform bodies
+    private jumpCount = 0;
+    private MAX_JUMPS = 3;
 
     constructor() {
         super("GameScene");
@@ -132,9 +145,20 @@ export default class GameScene extends Phaser.Scene {
             this.player.setVelocityX(0);
         }
 
-        // Jump
-        if (this.cursors.up?.isDown && this.player.body?.blocked.down) {
-            this.player.setVelocityY(PLAYER_JUMP);
+        // Jump logic with triple jump
+        const body = this.player.body as Phaser.Physics.Arcade.Body;
+
+        // Reset when grounded
+        if (body.blocked.down) {
+            this.jumpCount = 0;
+        }
+
+        // Perform jump
+        if (this.cursors.up?.isDown && Phaser.Input.Keyboard.JustDown(this.cursors.up)) {
+            if (this.jumpCount < this.MAX_JUMPS) {
+                this.player.setVelocityY(PLAYER_JUMP);
+                this.jumpCount++;
+            }
         }
     }
 }

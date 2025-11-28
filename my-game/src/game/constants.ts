@@ -1,4 +1,4 @@
-export const WORLD_SIZE = 1000;
+export const WORLD_SIZE = 2000;
 export const VIEWPORT_WIDTH = 800;
 export const VIEWPORT_HEIGHT = 600;
 export const PLAYER_SIZE = 25;
