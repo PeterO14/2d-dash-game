@@ -1,7 +1,7 @@
-export const WORLD_SIZE = 2000;
+export const WORLD_SIZE = 4000;
 export const VIEWPORT_WIDTH = 800;
 export const VIEWPORT_HEIGHT = 600;
-export const PLAYER_SIZE = 25;
+export const PLAYER_SIZE = 15;
 export const GROUND_HEIGHT = 60;
 export const OBSTACLE_SIZE = 50;
 export const OBSTACLE_SPAWN_RATE = 1800;

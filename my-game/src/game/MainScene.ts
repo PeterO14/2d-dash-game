@@ -8,43 +8,41 @@ import {
     PLAYER_SPEED,
 } from "./constants";
 
-// Staircase example to allow climbing
-const LEVEL_OBSTACLES = [
-    { x: 40, y: 0, width: 1960, height: 40 }, // Top wall (level 0)
-    { x: 1960, y: 40, width: 40, height: 1960 }, // Right wall (level 0)
-    { x: 0, y: 1960, width: 1960, height: 40 }, // Bottom wall (level 0)
-    { x: 0, y: 0, width: 40, height: 1960 }, // Left wall (level 0)
-
-    // Level 0 platforms
-    { x: 40, y: 1720, width: 140, height: 20 },
-    { x: 160, y: 1740, width: 20, height: 80 },
-    { x: 110, y: 1820, width: 70, height: 20 },
-    { x: 300, y: 1840, width: 20, height: 140 },
-
-    // { x: 300, y: 1800, width: 25, height: 150 }, // Bottom wall
-    // { x: 200, y: 1825, width: 100, height: 25 }, // Bottom wall
-    // { x: 400, y: 700, width: 200, height: 50 },
-    // { x: 650, y: 600, width: 200, height: 50 },
-    // { x: 900, y: 500, width: 200, height: 50 },
-
-
-    { x: 350, y: 300, width: 1300, height: 50 }, // Top wall (level 1)
-    { x: 1650, y: 300, width: 50, height: 1400 }, // Right wall (level 1)
-    { x: 300, y: 1650, width: 1350, height: 50 }, // Bottom wall (level 1)
-    { x: 300, y: 300, width: 50, height: 1350 }, // Left wall (level 1)
-
-];
-
-// const LEVEL_1_WALLS = [
-
-// ]
+import { LEVEL_OBSTACLES } from "./levelObstacles";
 
 export default class GameScene extends Phaser.Scene {
     private player!: Phaser.Physics.Arcade.Sprite;
     private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
-    private platforms: Phaser.Physics.Arcade.StaticBody[] = []; // store platform bodies
+
+    private platforms: Phaser.Physics.Arcade.StaticBody[] = [];
+
+    // Mini-map camera
+    private minimapCamera?: Phaser.Cameras.Scene2D.Camera;
+
+    // Movement smoothing
+    private readonly ACCEL = 2200;
+    private readonly DRAG = 1800;
+    private readonly MAX_SPEED = PLAYER_SPEED || 250;
+    
+    // Jumping
     private jumpCount = 0;
-    private MAX_JUMPS = 3;
+    private readonly MAX_JUMPS = 4000;
+    
+    private readonly COYOTE_TIME = 120; // ms grace after leaving ground
+    private coyoteTimer = 0;
+
+    private readonly JUMP_BUFFER_TIME = 120; // ms grace before touching ground
+    private jumpBufferTimer = 0;
+
+    private readonly VARIABLE_JUMP_CUT = 0.45; // early release lowers jump
+
+    // WALL MOVEMENT
+    private readonly WALL_SLIDE_SPEED = 70;
+    private readonly WALL_JUMP_FORCE_X = 320;
+    private readonly WALL_JUMP_FORCE_Y = PLAYER_JUMP;
+
+    private isTouchingWallLeft = false;
+    private isTouchingWallRight = false;
 
     constructor() {
         super("GameScene");
@@ -53,19 +51,13 @@ export default class GameScene extends Phaser.Scene {
     preload() {
         // Player texture
         const p = this.make.graphics({ x: 0, y: 0 });
-        p.fillStyle(0xff4444, 1);
+        p.fillStyle(0xff4444);
         p.fillRect(0, 0, PLAYER_SIZE, PLAYER_SIZE);
         p.generateTexture("playerSolid", PLAYER_SIZE, PLAYER_SIZE);
 
-        // Ground texture
-        const g = this.make.graphics({ x: 0, y: 0 });
-        g.fillStyle(0x228B22, 1);
-        g.fillRect(0, 0, WORLD_SIZE, GROUND_HEIGHT);
-        g.generateTexture("groundSolid", WORLD_SIZE, GROUND_HEIGHT);
-
-        // Obstacle texture (square tile will be stretched)
+        // Platform texture
         const o = this.make.graphics({ x: 0, y: 0 });
-        o.fillStyle(0x444444, 1);
+        o.fillStyle(0x444444);
         o.fillRect(0, 0, 100, 100);
         o.generateTexture("platformSolid", 100, 100);
     }
@@ -73,92 +65,115 @@ export default class GameScene extends Phaser.Scene {
     create() {
         this.cursors = this.input.keyboard!.createCursorKeys();
 
-        // Sky
+        // Background
         this.add.rectangle(0, 0, WORLD_SIZE, WORLD_SIZE, 0x87ceeb).setOrigin(0);
 
-        // Ground visual
-        // this.add.image(0, WORLD_SIZE - GROUND_HEIGHT, "groundSolid").setOrigin(0);
-
-        // Ground physics (top-left aligned and body refreshed)
-        // const ground = this.physics.add.staticSprite(0, 0, null)
-        //     .setOrigin(0, 0)
-        //     .setPosition(0, WORLD_SIZE - GROUND_HEIGHT)
-        //     .setDisplaySize(WORLD_SIZE, GROUND_HEIGHT)
-        //     .refreshBody();
-
-        // --- Create obstacles (physics bodies) BEFORE the player is created,
-        // but DO NOT add colliders to this.player yet. Store them. ---
+        // Create all platforms BEFORE the player
         const platformSprites: Phaser.Physics.Arcade.StaticImage[] = [];
 
         LEVEL_OBSTACLES.forEach(ob => {
-            const platform = this.physics.add.staticSprite(0, 0, "platformSolid")
+            const platform = this.physics.add.staticImage(ob.x, ob.y, "platformSolid")
                 .setOrigin(0, 0)
-                .setPosition(ob.x, ob.y)
                 .setDisplaySize(ob.width, ob.height)
                 .refreshBody();
-
             platformSprites.push(platform);
-            // do NOT call this.physics.add.collider(this.player, platform) here
         });
 
-        // --- Now create the player AFTER obstacles exist ---
-        const groundTop = WORLD_SIZE - GROUND_HEIGHT;
+        this.platforms = platformSprites.map(p => p.body as Phaser.Physics.Arcade.StaticBody);
 
-        this.player = this.physics.add
-            .sprite(100, groundTop - PLAYER_SIZE, "playerSolid")
-            .setOrigin(0.5, 1)
-            .setCollideWorldBounds(true);
+        // Player
+        const spawnY = WORLD_SIZE - GROUND_HEIGHT - PLAYER_SIZE;
+        this.player = this.physics.add.sprite(150, spawnY, "playerSolid");
+        this.player.setOrigin(0.5, 1);
+        this.player.setCollideWorldBounds(true);
 
-        // Ensure physics body = sprite size and add gravity
-        this.player.setSize(PLAYER_SIZE, PLAYER_SIZE).setOffset(0, 0);
-        (this.player.body as Phaser.Physics.Arcade.Body).setGravityY(PLAYER_GRAVITY);
+        const body = this.player.body as Phaser.Physics.Arcade.Body;
+        body.setGravityY(PLAYER_GRAVITY);
+        body.setMaxVelocity(this.MAX_SPEED, 650);
+        body.setDragX(this.DRAG);
+        
+        // Colliders
+        platformSprites.forEach(p => this.physics.add.collider(this.player, p));
 
-        // --- Colliders: now it's safe to add player <-> ground and player <-> platforms ---
-        // this.physics.add.collider(this.player, ground);
-
-        platformSprites.forEach(platform => {
-            this.physics.add.collider(this.player, platform);
-        });
-
-        // Keep reference to platform bodies if you need them later
-        this.platforms = platformSprites.map(s => s.body as Phaser.Physics.Arcade.StaticBody);
-
-        // Camera + bounds
+        // Camera
         this.cameras.main.setBounds(0, 0, WORLD_SIZE, WORLD_SIZE);
         this.physics.world.setBounds(0, 0, WORLD_SIZE, WORLD_SIZE);
-        this.cameras.main.startFollow(this.player, true, 0.25, 0.25);
+        this.cameras.main.startFollow(this.player, true, 0.12, 0.12);
+        this.cameras.main.setDeadzone(200, 200);
+
+        // Minimap
+        this.minimapCamera = this.cameras.add(10, 10, 150, 150)
+            .setZoom(150 / WORLD_SIZE)
+            .setScroll(0, 0)
+            .setBackgroundColor(0x000000)
+            .startFollow(this.player);
     }
 
-    update() {
-        if (!this.player) return;
-
-        // If PLAYER_SPEED is 0, movement will appear disabled.
-        // Use a small fallback to test keyboard movement if needed:
-        const speed = PLAYER_SPEED || 150;
-
-        // Left / right movement
-        if (this.cursors.left?.isDown) {
-            this.player.setVelocityX(-speed);
-        } else if (this.cursors.right?.isDown) {
-            this.player.setVelocityX(speed);
-        } else {
-            this.player.setVelocityX(0);
-        }
-
-        // Jump logic with triple jump
+    update(time: number, delta: number) {
         const body = this.player.body as Phaser.Physics.Arcade.Body;
+        const dt = delta / 1000;
 
-        // Reset when grounded
+        // Update timers
         if (body.blocked.down) {
+            this.coyoteTimer = this.COYOTE_TIME;
             this.jumpCount = 0;
+        } else {
+            this.coyoteTimer -= delta;
         }
 
-        // Perform jump
-        if (this.cursors.up?.isDown && Phaser.Input.Keyboard.JustDown(this.cursors.up)) {
-            if (this.jumpCount < this.MAX_JUMPS) {
-                this.player.setVelocityY(PLAYER_JUMP);
-                this.jumpCount++;
-            }
+        if (Phaser.Input.Keyboard.JustDown(this.cursors.up)) {
+            this.jumpBufferTimer = this.JUMP_BUFFER_TIME;
+        } else {
+            this.jumpBufferTimer -= delta;
+        }
+
+        // Wall detection
+        this.isTouchingWallLeft = body.blocked.left;
+        this.isTouchingWallRight = body.blocked.right;
+        const touchingWall = this.isTouchingWallLeft || this.isTouchingWallRight;
+
+        // Wall slide
+        if (!body.blocked.down && touchingWall && body.velocity.y > this.WALL_SLIDE_SPEED) {
+            body.setVelocityY(this.WALL_SLIDE_SPEED);
+        }
+
+        // Horizontal movement - acceleration based
+        if (this.cursors.left?.isDown) {
+            body.setAccelerationX(-this.ACCEL);
+        } else if (this.cursors.right?.isDown) {
+            body.setAccelerationX(this.ACCEL);
+        } else {
+            body.setAccelerationX(0);
+        }
+
+        // Jumping
+        const canNormalJump = this.coyoteTimer > 0 || this.jumpCount < this.MAX_JUMPS;
+
+        const wantsToJump = this.jumpBufferTimer > 0;
+
+        // Wall jumping
+        if (touchingWall && wantsToJump && !body.blocked.down) {
+            this.jumpBufferTimer = 0;
+
+            const dir = this.isTouchingWallLeft ? 1 : -1;
+
+            body.setVelocityY(this.WALL_JUMP_FORCE_Y);
+            body.setVelocityX(dir * this.WALL_JUMP_FORCE_X);
+
+            this.jumpCount++;
+            return;
+        }
+
+        // Normal jumping
+        if (wantsToJump && canNormalJump) {
+            this.jumpBufferTimer = 0;
+            body.setVelocityY(PLAYER_JUMP);
+            this.jumpCount++;
+        }
+
+        // Variable jump height
+        if (body.velocity.y < 0 && !this.cursors.up?.isDown) {
+            body.setVelocityY(body.velocity.y * this.VARIABLE_JUMP_CUT);
         }
     }
 }
