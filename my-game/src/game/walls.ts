@@ -1,4 +1,4 @@
-export const LEVEL_OBSTACLES = [
+export const STATIC_WALLS = [
     { x: 650, y: 1675, width: 50, height: 300 },
     { x: 50, y: 1625, width: 975, height: 50 },
     { x: 975, y: 1975, width: 50, height: 675 },
@@ -17,7 +17,7 @@ export const LEVEL_OBSTACLES = [
     { x: 1300, y: 2975.5, width: 325, height: 50 },
     { x: 1625, y: 2975, width: 50, height: 375 },
     { x: 1300, y: 2650, width: 325, height: 50 },
-    { x: 1675, y: 1975, width: 300, height: 50 },
+    // { x: 1675, y: 1975, width: 300, height: 50 },
     { x: 1625, y: 1350, width: 50, height: 1350 },
     { x: 1625, y: 1300, width: 350, height: 50 },
     { x: 1300, y: 3625, width: 1025, height: 50 },
@@ -75,3 +75,7 @@ export const LEVEL_OBSTACLES = [
     { x: 1300, y: 700, width: 50, height: 1675 },
     { x: 2975, y: 975, width: 650, height: 50 },
 ];
+
+export const MOVING_WALLS = [
+    { x: 1675, y: 1975, width: 300, height: 50, axis: "y", speed: 50, range: 250 },
+]
