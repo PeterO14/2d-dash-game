@@ -7,7 +7,6 @@ export const STATIC_WALLS = [
     { x: 650, y: 2325, width: 325, height: 50 },
     { x: 50, y: 2325, width: 325, height: 50 },
     { x: 325, y: 2650, width: 700, height: 50 },
-    { x: 650, y: 3675, width: 50, height: 275 },
     { x: 375, y: 2975, width: 325, height: 50 },
     { x: 650, y: 3300, width: 325, height: 50 },
     { x: 975, y: 2975, width: 50, height: 650 },
@@ -17,7 +16,6 @@ export const STATIC_WALLS = [
     { x: 1300, y: 2975.5, width: 325, height: 50 },
     { x: 1625, y: 2975, width: 50, height: 375 },
     { x: 1300, y: 2650, width: 325, height: 50 },
-    // { x: 1675, y: 1975, width: 300, height: 50 },
     { x: 1625, y: 1350, width: 50, height: 1350 },
     { x: 1625, y: 1300, width: 350, height: 50 },
     { x: 1300, y: 3625, width: 1025, height: 50 },
@@ -77,5 +75,6 @@ export const STATIC_WALLS = [
 ];
 
 export const MOVING_WALLS = [
-    { x: 1675, y: 1975, width: 300, height: 50, axis: "y", speed: 50, range: 250 },
+    { x: 650, y: 3675, width: 50, height: 275, axis: "x", speed: 25, range: 600 },
+    { x: 1675, y: 1975, width: 300, height: 50, axis: "y", speed: 25, range: 700 },
 ]

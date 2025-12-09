@@ -121,7 +121,7 @@ export default class GameScene extends Phaser.Scene {
         // Camera
         this.cameras.main.setBounds(0, 0, WORLD_SIZE, WORLD_SIZE);
         this.physics.world.setBounds(0, 0, WORLD_SIZE, WORLD_SIZE);
-        this.cameras.main.startFollow(this.player, true, 0.12, 0.12);
+        this.cameras.main.startFollow(this.player, true, 0.05, 0.05);
         this.cameras.main.setDeadzone(200, 200);
 
         // Minimap
@@ -257,14 +257,30 @@ export default class GameScene extends Phaser.Scene {
             // Player riding logic
             const playerBody = this.player.body as Phaser.Physics.Arcade.Body;
 
-            const playerStandingOn = 
+            // Check if player is standing on this platform
+            const standingOn =
                 playerBody.blocked.down &&
                 playerBody.touching.down &&
-                w.body?.touching.up;
+                w.body.touching.up;
 
-            if (playerStandingOn) {
-                // Carry player the same amount the paltform moved
-                const dy = w.y - prevY;
+            // How far the platform moved this frame
+            const dy = w.y - prevY;
+
+            // If platform moves UP and player is on it → disable physics separation
+            if (standingOn && dy < 0) {
+                // Freeze player's natural physics so it doesn't "bounce"
+                playerBody.setVelocityY(0);
+
+                // Disable Arcade pushing player upward
+                playerBody.blocked.down = false;
+                playerBody.touching.down = false;
+                
+                // Move player manually (perfectly smooth)
+                this.player.y += dy;
+                playerBody.y += dy;
+            }
+            // If platform is moving DOWN → normal behavior but still carry player
+            else if (standingOn && dy > 0) {
                 this.player.y += dy;
                 playerBody.y += dy;
             }
