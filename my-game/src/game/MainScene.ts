@@ -219,33 +219,55 @@ export default class GameScene extends Phaser.Scene {
         this.movingWalls.forEach(w => {
             const data = (w as any).moveData;
             const axis = data.axis;
+            const body = w.body as Phaser.Physics.Arcade.Body;
+
+            // Store previous position
+            const prevY = w.y;
 
             // Move
             if (axis === "x") {
                 w.x += data.speed * dt;
-
-                const dist = Math.abs(w.x - data.start);
-                if (dist >= data.range) {
-                    // Reverse instantly
-                    data.speed *= -1;
-
-                    // Correct overshoot
-                    const overshoot = dist - data.range;
-                    w.x += overshoot * Math.sign(data.speed);
-                }
             } else {
                 w.y += data.speed * dt;
-                                
-                const dist = Math.abs(w.y - data.start);
-                if (dist >= data.range) {
-                    data.speed *= -1;
+            }
 
-                    const overshoot = dist - data.range;
+            // Range check + reversal
+            const dist = Math.abs((axis=== "x" ? w.x : w.y) - data.start);
+            if (dist >= data.range) {
+                data.speed *= -1;
+
+                const overshoot = dist - data.range;
+                if (axis === "x") {
+                    w.x += overshoot * Math.sign(data.speed);
+                } else {
                     w.y += overshoot * Math.sign(data.speed);
                 }
             }
-            
-            w.body?.updateFromGameObject();   
+
+            // Update the physics body
+            body.updateFromGameObject();
+
+            // Assign body velocity so collisiions work correctly
+            if (axis === "x") {
+                body.setVelocityX(data.speed);
+            } else {
+                body.setVelocityY(data.speed);
+            }
+
+            // Player riding logic
+            const playerBody = this.player.body as Phaser.Physics.Arcade.Body;
+
+            const playerStandingOn = 
+                playerBody.blocked.down &&
+                playerBody.touching.down &&
+                w.body?.touching.up;
+
+            if (playerStandingOn) {
+                // Carry player the same amount the paltform moved
+                const dy = w.y - prevY;
+                this.player.y += dy;
+                playerBody.y += dy;
+            }
         });
     }
 }
