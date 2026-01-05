@@ -1,11 +1,12 @@
 export const WORLD_SIZE = 4000;
+export const TEST_WORLD_SIZE = 1024;
 export const VIEWPORT_WIDTH = 800;
 export const VIEWPORT_HEIGHT = 600;
-export const PLAYER_SIZE = 15;
+export const PLAYER_SIZE = 64;
 export const GROUND_HEIGHT = 60;
 export const OBSTACLE_SIZE = 50;
 export const OBSTACLE_SPAWN_RATE = 1800;
 export const SCROLL_SPEED = 5;
-export const PLAYER_JUMP = -450;
-export const PLAYER_GRAVITY = 900;
-export const PLAYER_SPEED = 100;
+export const PLAYER_JUMP = -500;
+export const PLAYER_GRAVITY = 1200;
+export const PLAYER_SPEED = 220;

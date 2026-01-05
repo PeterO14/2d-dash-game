@@ -1,6 +1,7 @@
 import Phaser from "phaser";
-import TitleScene from "./TitleScene";
-import GameScene  from "./MainScene";
+// import TitleScene from "./TitleScene";
+// import GameScene  from "./MainScene";
+import { PlayerTestScene } from "./PlayerTestScene";
 import { VIEWPORT_WIDTH, VIEWPORT_HEIGHT } from "./constants";
 
 export const createGame = (parentId: string) => {
@@ -9,7 +10,7 @@ export const createGame = (parentId: string) => {
         width: VIEWPORT_WIDTH,
         height: VIEWPORT_HEIGHT,
         parent: parentId,
-        backgroundColor: "#000000",
+        backgroundColor: "#ff0000ff",
         physics: {
             default: "arcade",
             arcade: {
@@ -17,6 +18,7 @@ export const createGame = (parentId: string) => {
                 debug: false
             },
         },
-        scene: [TitleScene, GameScene],
+        // scene: [TitleScene, GameScene],
+        scene: [PlayerTestScene],
     });
 };

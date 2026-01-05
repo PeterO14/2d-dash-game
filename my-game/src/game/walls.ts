@@ -75,6 +75,6 @@ export const STATIC_WALLS = [
 ];
 
 export const MOVING_WALLS = [
-    { x: 650, y: 3675, width: 50, height: 275, axis: "x", speed: 25, range: 600 },
-    { x: 1675, y: 1975, width: 300, height: 50, axis: "y", speed: 25, range: 700 },
+    { x: 650, y: 3675, width: 50, height: 275, axis: "x", speed: 50, rangeLeft: 550, rangeRight: 300 },
+    { x: 1675, y: 1975, width: 300, height: 50, axis: "y", speed: 45, rangeUp: 100, rangeDown: 200 },
 ]
