@@ -7,7 +7,6 @@ import {
     PLAYER_GRAVITY,
     PLAYER_SPEED,
 } from "./constants";
-
 import { STATIC_WALLS, MOVING_WALLS } from "./walls";
 
 interface MovingWallData {
@@ -26,7 +25,6 @@ const MINIMAP_SIZE = 150;
 const MINIMAP_PADDING = 10;
 const DASH_SPEED = 500;
 const DASH_TIME = 180;
-// const DASH_COOLDOWN = 0;
 
 export default class GameScene extends Phaser.Scene {
     private player!: Phaser.Physics.Arcade.Sprite;
@@ -45,21 +43,17 @@ export default class GameScene extends Phaser.Scene {
     
     // Jumping
     private jumpCount = 0;
-    private readonly MAX_JUMPS = 4000;
-    
+    private readonly MAX_JUMPS = Infinity;
     private readonly COYOTE_TIME = 120; // ms grace after leaving ground
     private coyoteTimer = 0;
-
     private readonly JUMP_BUFFER_TIME = 120; // ms grace before touching ground
     private jumpBufferTimer = 0;
-
     private readonly VARIABLE_JUMP_CUT = 0.45; // early release lowers jump
 
     // Wall jump/movement
     private readonly WALL_SLIDE_SPEED = 70;
     private readonly WALL_JUMP_FORCE_X = 320;
     private readonly WALL_JUMP_FORCE_Y = PLAYER_JUMP;
-
     private isTouchingWallLeft = false;
     private isTouchingWallRight = false;
     private wallJumpCooldown = 0;
@@ -80,43 +74,47 @@ export default class GameScene extends Phaser.Scene {
     preload() {
         // Player texture
         const p = this.make.graphics({ x: 0, y: 0 });
-        p.fillStyle(0xff4444);
-        p.fillCircle(PLAYER_SIZE / 2, PLAYER_SIZE / 2, PLAYER_SIZE / 2);
+        p.fillStyle(0xf26419);
+        p.fillRect(PLAYER_SIZE / 2, PLAYER_SIZE / 2, PLAYER_SIZE / 2, PLAYER_SIZE / 2);
         p.generateTexture("playerSolid", PLAYER_SIZE, PLAYER_SIZE);
 
-        // Platform texture
-        const w = this.make.graphics({ x: 0, y: 0 });
-        w.fillStyle(0x444444);
-        w.fillRect(0, 0, 100, 100);
-        w.generateTexture("wallSolid", 100, 100);
+        // Static wall texture
+        const sw = this.make.graphics({ x: 0, y: 0 });
+        sw.fillStyle(0x2f4858);
+        sw.fillRect(0, 0, 100, 100);
+        sw.generateTexture("staticWallSolid", 100, 100);
+
+        // Moving wall texture
+        const mw = this.make.graphics({ x: 0, y: 0 });
+        mw.fillStyle(0x33658a);
+        mw.fillRect(0, 0, 100, 100);
+        mw.generateTexture("movingWallSolid", 100, 100);
     }
 
     create() {
         this.cursors = this.input.keyboard!.createCursorKeys();
 
-        // --- Background ---
-        this.add.rectangle(0, 0, WORLD_SIZE, WORLD_SIZE, 0x87ceeb).setOrigin(0);
+        // Background
+        this.add.rectangle(0, 0, WORLD_SIZE, WORLD_SIZE, 0x55dde0).setOrigin(0);
 
-        // --- Static Walls ---
+        // Static Walls
         STATIC_WALLS.forEach(w => {
-            const wall = this.physics.add.staticImage(w.x, w.y, "wallSolid")
+            const wall = this.physics.add.staticImage(w.x, w.y, "staticWallSolid")
                 .setOrigin(0, 0)
                 .setDisplaySize(w.width, w.height)
                 .refreshBody();
             this.staticWalls.push(wall);
         });
 
-        // --- Moving Walls ---
+        // Moving Walls
         MOVING_WALLS.forEach((w, i) => {
-            const wall = this.physics.add.image(w.x, w.y, "wallSolid")
+            const wall = this.physics.add.image(w.x, w.y, "movingWallSolid")
                 .setOrigin(0, 0)
                 .setDisplaySize(w.width, w.height);
-
             wall.setImmovable(true);
             wall.body.allowGravity = false;
             wall.body.pushable = false;
 
-            // store movement data in parallel array
             this.movingWallData[i] = {
                 axis: w.axis as "x" | "y",
                 speed: w.speed,
@@ -128,38 +126,35 @@ export default class GameScene extends Phaser.Scene {
                 state: "goingPositive",
                 traveled: 0,
             };
-
             this.movingWalls.push(wall);
-
             wall.body.checkCollision.up = true;
             wall.body.checkCollision.down = true;
             wall.body.checkCollision.left = true;
             wall.body.checkCollision.right = true;
         });
 
-        // --- Player ---
+        // Player
         const spawnY = WORLD_SIZE - GROUND_HEIGHT - PLAYER_SIZE / 2;
         this.player = this.physics.add.sprite(150, spawnY, "playerSolid");
         this.player.setOrigin(0.5, 0.5);
         this.player.setCollideWorldBounds(true);
-
         const body = this.player.body as Phaser.Physics.Arcade.Body;
         body.setGravityY(PLAYER_GRAVITY);
         body.setMaxVelocity(this.MAX_SPEED, 650);
         body.setDragX(this.DRAG);
         body.setCircle(Math.floor(PLAYER_SIZE / 2), 0, 0);
 
-        // --- Colliders ---
+        // Colliders
         this.staticWalls.forEach(w => this.physics.add.collider(this.player, w));
         this.movingWalls.forEach(w => this.physics.add.collider(this.player, w));
 
-        // --- Camera ---
+        // Camera
         this.cameras.main.setBounds(0, 0, WORLD_SIZE, WORLD_SIZE);
         this.physics.world.setBounds(0, 0, WORLD_SIZE, WORLD_SIZE);
         this.cameras.main.startFollow(this.player, true, 0.05, 0.05);
         this.cameras.main.setDeadzone(200, 200);
 
-        // --- Minimap ---
+        // Minimap
         this.minimapCamera = this.cameras.add(
             MINIMAP_PADDING,
             MINIMAP_PADDING,
@@ -170,10 +165,7 @@ export default class GameScene extends Phaser.Scene {
             .setScroll(0, 0)
             .setBackgroundColor(0x000000)
             .startFollow(this.player);
-        
-        // --- Logging ---
-        console.log("GameScene created. Player spawned at:", this.player.x, this.player.y);
-    }
+}
 
     update(time: number, delta: number) {
         const body = this.player.body as Phaser.Physics.Arcade.Body;
@@ -188,22 +180,17 @@ export default class GameScene extends Phaser.Scene {
         }
         this.updateMovingWalls(dt);
 
-        // --- Velocity transfer from moving platform ---
+        // Velocity transfer from moving platform
         if (body.blocked.down) {
-            // Find the moving wall the player is standing on
             for (let i = 0; i < this.movingWalls.length; i++) {
                 const wall = this.movingWalls[i];
                 const wallBody = wall.body as Phaser.Physics.Arcade.Body;
-                
-                // Check if player's feet are on top of the wall
                 const playerBottom = this.player.getBounds().bottom;
                 const wallTop = wall.getBounds().top;
                 const overlapX =
                     this.player.getBounds().right > wall.getBounds().left &&
                     this.player.getBounds().left < wall.getBounds().right;
-                const onTop =
-                    Math.abs(playerBottom - wallTop) < 2 && // Allow small margin
-                    overlapX;
+                const onTop = Math.abs(playerBottom - wallTop) < 2 && overlapX;
                 if (onTop) {
                     body.velocity.x += wallBody.velocity.x;
                     break;
@@ -261,7 +248,6 @@ export default class GameScene extends Phaser.Scene {
         // Full air control, but lower accelaeration in air
         const accel = body.blocked.down ? this.ACCEL : this.ACCEL * 0.7;
         const drag = body.blocked.down ? this.DRAG : this.DRAG * 0.5;
-
         body.setDragX(drag);
 
         if (this.cursors.left?.isDown) {
@@ -278,39 +264,28 @@ export default class GameScene extends Phaser.Scene {
         const canCoyote = this.coyoteTimer > 0 && this.canJump;
         const touchingWall = this.isTouchingWallLeft || this.isTouchingWallRight;
 
-        // --- Wall Jump ---
-        if (
-            touchingWall && 
-            wantsToJump && 
-            !body.blocked.down &&
-            this.wallJumpCooldown <= 0
-        ) {
+        // Wall Jump
+        if (touchingWall && wantsToJump && !body.blocked.down && this.wallJumpCooldown <= 0) {
             this.jumpBufferTimer = 0;
             this.wallJumpCooldown = this.WALL_JUMP_COOLDOWN_TIME;
             this.canJump = false;
-
-            // Always jump away from wall
             const dir = this.isTouchingWallLeft ? 1 : -1;
             body.setVelocityY(this.WALL_JUMP_FORCE_Y);
             body.setVelocityX(dir * this.WALL_JUMP_FORCE_X);
-            
             this.canDash = true;
             this.jumpCount = 0;
             return;
         }
 
-        // --- Normal Jump ---
-        if (
-            wantsToJump && 
-            (canCoyote || this.jumpCount < this.MAX_JUMPS)
-        ) {
+        // Normal Jump
+        if (wantsToJump && (canCoyote || this.jumpCount < this.MAX_JUMPS)) {
             this.jumpBufferTimer = 0;
             body.setVelocityY(PLAYER_JUMP);
             this.canJump = false;
             this.jumpCount++;
         }
 
-        // --- Variable Jump Height ---
+        // Variable Jump Height
         if (body.velocity.y < 0 && !this.cursors.up?.isDown) {
             body.setVelocityY(body.velocity.y * this.VARIABLE_JUMP_CUT);
         }
@@ -318,12 +293,7 @@ export default class GameScene extends Phaser.Scene {
 
     private updateDash(body: Phaser.Physics.Arcade.Body, delta: number) {
         // Start dash
-        if (
-            Phaser.Input.Keyboard.JustDown(this.cursors.space!) &&
-            this.canDash &&
-            !this.isDashing
-        ) {
-            // Determine dash direction
+        if (Phaser.Input.Keyboard.JustDown(this.cursors.space!) && this.canDash && !this.isDashing) {
             let dx = 0, dy = 0;
             if (this.cursors.left?.isDown) dx = -1;
             if (this.cursors.right?.isDown) dx = 1;
@@ -346,10 +316,7 @@ export default class GameScene extends Phaser.Scene {
         // Dash movement
         if (this.isDashing) {
             this.dashTimer -= delta;
-            body.setVelocity(
-                this.dashDir.x * DASH_SPEED,
-                this.dashDir.y * DASH_SPEED
-            );
+            body.setVelocity(this.dashDir.x * DASH_SPEED, this.dashDir.y * DASH_SPEED);
             
             if (this.dashTimer <= 0) {
                 this.isDashing = false;
@@ -402,10 +369,8 @@ export default class GameScene extends Phaser.Scene {
             data.traveled += Math.abs(moveAmount);
 
             if (axis === "x") {
-                // body.setVelocityX(data.speed * direction);
                 w.x += moveAmount;
             } else {
-                // body.setVelocityY(data.speed * direction);
                 w.y += moveAmount;
             }
 

@@ -24,6 +24,12 @@ export class PlayerTestScene extends Phaser.Scene {
         g.fillStyle(0x8a8e91);
         g.fillRect(0, 0, 100, 100);
         g.generateTexture("platform", 100, 50);
+
+        // Create a small white bubble texture
+        const bubbleGraphics = this.make.graphics({ x: 0, y: 0 });
+        bubbleGraphics.fillStyle(0xffffff); // White color
+        bubbleGraphics.fillCircle(5, 5, 5); // Center at (5,5) with radius 5 for a 10x10 texture
+        bubbleGraphics.generateTexture('bubbleParticle', 10, 10);
     }
 
     create() {
@@ -38,20 +44,18 @@ export class PlayerTestScene extends Phaser.Scene {
         const p2 = this.platforms.create(550, 300, 'platform') as Phaser.Physics.Arcade.Image;
         p2.refreshBody();
 
-        this.player = new Player(this, 100, 200, 'player', {
+        this.player = new Player(this, 100, TEST_WORLD_SIZE - 100, 'player', {
             speed: 240,
             jumpSpeed: 440, 
-            coyoteTimeMs: 120,
-            jumpBufferMs: 150,
-            fallSquishMinVy: 350,
-            glowColor: 0x00ffcc,
+            glowColor: 0x000000,
             glowThickness: 4
         });
 
         this.physics.add.collider(this.player, this.platforms);
-        
+
         this.cameras.main.setBounds(0, 0, TEST_WORLD_SIZE, TEST_WORLD_SIZE);
         this.cameras.main.startFollow(this.player, true, 0.1, 0.1);
+        // this.cameras.main.setZoom(4);
         this.cameras.main.setDeadzone(100, 100);
     }
 

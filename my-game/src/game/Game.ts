@@ -1,7 +1,7 @@
 import Phaser from "phaser";
-// import TitleScene from "./TitleScene";
-// import GameScene  from "./MainScene";
-import { PlayerTestScene } from "./PlayerTestScene";
+import TitleScene from "./TitleScene";
+import GameScene  from "./MainScene";
+// import { PlayerTestScene } from "./PlayerTestScene";
 import { VIEWPORT_WIDTH, VIEWPORT_HEIGHT } from "./constants";
 
 export const createGame = (parentId: string) => {
@@ -18,7 +18,7 @@ export const createGame = (parentId: string) => {
                 debug: false
             },
         },
-        // scene: [TitleScene, GameScene],
-        scene: [PlayerTestScene],
+        scene: [TitleScene, GameScene],
+        // scene: [PlayerTestScene],
     });
 };
