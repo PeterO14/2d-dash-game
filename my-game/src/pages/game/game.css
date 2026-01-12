@@ -28,48 +28,8 @@
 }
 
 /* Home button: circular "icon" style */
-.gamePage_link {
-  width: 44px;
-  height: 44px;
-
-  display: inline-grid;
-  place-items: center;
-
-  border-radius: 999px;
-  text-decoration: none;
-  color: inherit;
-
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.35);
-
-  transition: transform 120ms ease, background 120ms ease, border-color 120ms ease;
-}
-
-.gamePage_link:hover {
-  transform: translateY(-1px);
-  background: rgba(255, 255, 255, 0.12);
-  border-color: rgba(255, 255, 255, 0.28);
-}
-
-.gamePage_link:active {
-  transform: translateY(0);
-}
-
-.gamePage_link:focus-visible {
-  outline: 3px solid rgba(120, 180, 255, 0.9);
-  outline-offset: 3px;
-}
-
-/* Show a home icon without changing variables or requiring markup changes */
-.gamePage_link {
-  font-size: 0; /* hide the "Home" text visually */
-}
-.gamePage_link::before {
-  content: "⌂";
-  font-size: 18px;
-  line-height: 1;
-}
+/* .gamePage_link {
+} */
 
 /* Stage layout: left panel | game | right panel */
 .gamePage_stage {
@@ -154,10 +114,20 @@
   color: inherit;
 
   cursor: pointer;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
 }
 
 .gamePage_btn:hover {
   background: rgba(255, 255, 255, 0.12);
+}
+
+.gamePage_btn:focus-visible {
+  outline: 3px solid rgba(120, 180, 255, 0.9);
+  outline-offset: 3px;
 }
 
 /* Responsive: stack panels under game */

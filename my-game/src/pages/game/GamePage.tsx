@@ -32,7 +32,7 @@ export default function GamePage() {
 		<div className="gamePage" style={sizeStyle}>
 			{ /* Top Bar */ }
 			<div className="gamePage_top">
-				<Link className="gamePage_link" to="/">Home</Link>
+				<Link className="gamePage_btn" to="/">Home</Link>
 
 				<div className="gamePage_topButtons">
 					<button className="gamePage_btn" type="button" onClick={() => window.location.reload()}>

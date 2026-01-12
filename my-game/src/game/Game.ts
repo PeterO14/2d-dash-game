@@ -1,24 +1,24 @@
 import Phaser from "phaser";
 import TitleScene from "./TitleScene";
-import GameScene  from "./MainScene";
-// import { PlayerTestScene } from "./PlayerTestScene";
+import GameScene  from "./GameScene";
 import { VIEWPORT_WIDTH, VIEWPORT_HEIGHT } from "./constants";
 
-export const createGame = (parentId: string) => {
-    return new Phaser.Game ({
-        type: Phaser.AUTO,
-        width: VIEWPORT_WIDTH,
-        height: VIEWPORT_HEIGHT,
-        parent: parentId,
-        backgroundColor: "#ff0000ff",
-        physics: {
-            default: "arcade",
-            arcade: {
-                gravity: { y: 0 },
-                debug: false
-            },
-        },
-        scene: [TitleScene, GameScene],
-        // scene: [PlayerTestScene],
-    });
+export function createGame(parent: string | HTMLElement): Phaser.Game {
+  const config: Phaser.Types.Core.GameConfig = {
+    type: Phaser.AUTO,
+    width: VIEWPORT_WIDTH,
+    height: VIEWPORT_HEIGHT,
+    parent,
+    backgroundColor: "#ff0000ff",
+    physics: {
+      default: "arcade",
+      arcade: {
+        gravity: { x: 0, y: 0 },
+        debug: false
+      },
+    },
+    scene: [TitleScene, GameScene],
+  };
+
+  return new Phaser.Game(config);
 };
